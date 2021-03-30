@@ -1,20 +1,36 @@
 import numpy as np
 
 
+def check_dom(dom):
+    '''
+    Check if dom is a valid domain
+    i. e. a 2 elem tuple with distinct number values
+    Return the values in crescent order
+    '''
+    if not isinstance(dom, tuple) or len(dom) != 2:
+        raise TypeError('dom must be a 2-element tuple')
+
+    try:
+        dom0 = float(dom[0])
+        dom1 = float(dom[1])
+    except TypeError:
+        raise TypeError('The elems of dom must be numbers')
+
+    if dom0 == dom1:
+        raise ValueError('The elems of dom must be distinct')
+
+    if dom0 < dom1:
+        return dom0, dom1
+    else:
+        return dom1, dom0
+
+
 def sec_method(func, dom=(0., 1.), err=10e-12, max_iter=50):
     '''
     finds the root of the equation func = 0 in the interval dom
     returns None if no root is found in max_iter iteractions
     '''
-    if not isinstance(dom, tuple):
-        raise TypeError('dom must be a 2-element tuple')
-
-    if dom[0] < dom[1]:
-        a = dom[0]
-        b = dom[1]
-    else:
-        a = dom[1]
-        b = dom[0]
+    a, b = check_dom(dom)
 
     for i in range(max_iter):
         x = b - func(b) * (a - b) / (func(a) - func(b))
@@ -30,12 +46,9 @@ def euler(func, init_value, dom=(0., 1.), h=0.1, method='explicit'):
     solves y' = func(x, y); y(dom[0]) = init_value in the given dom
     using the given type of method (explicit, implicit, or modified)
     '''
-    if not isinstance(dom, tuple):
-        raise TypeError('dom value must be a 2-element tuple')
-    if dom[0] >= dom[1]:
-        raise ValueError('Invalid domain')
+    a, b = check_dom(dom)
 
-    x = np.arange(dom[0], dom[1] + h, h)
+    x = np.arange(a, b + h, h)
     y = np.array([init_value])
 
     if not isinstance(method, str):

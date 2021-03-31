@@ -65,9 +65,6 @@ def euler(func, init_value, dom=(0., 1.), h=0.1, **kwargs):
     x = np.arange(a, b + h, h)
     y = np.array([init_value])
 
-    if not isinstance(method, str):
-        raise TypeError('method value must be a string')
-
     if method == 'explicit':
         for i in range(len(x) - 1):
             y = np.append(y, y[i] + h * func(x[i], y[i]))

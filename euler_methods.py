@@ -41,12 +41,26 @@ def sec_method(func, dom=(0., 1.), err=10e-12, max_iter=50):
     return None
 
 
-def euler(func, init_value, dom=(0., 1.), h=0.1, method='explicit'):
+def euler(func, init_value, dom=(0., 1.), h=0.1, **kwargs):
     '''
     solves y' = func(x, y); y(dom[0]) = init_value in the given dom
-    using the given type of method (explicit, implicit, or modified)
+    using the given type of method as a kwarg 
+    (method='explicit', ='implicit', or ='modified')
     '''
     a, b = check_dom(dom)
+
+    methods = ('explicit', 'implicit', 'modified')
+
+    try:
+        method = kwargs['method']
+    except KeyError:
+        method = 'modified'
+        pass
+
+    if not isinstance(method, str):
+        raise TypeError('method kwarg value must be a string')
+    if method not in methods:
+        print('Invalid method in euler(). Using modified method instead')
 
     x = np.arange(a, b + h, h)
     y = np.array([init_value])
@@ -58,7 +72,8 @@ def euler(func, init_value, dom=(0., 1.), h=0.1, method='explicit'):
         for i in range(len(x) - 1):
             y = np.append(y, y[i] + h * func(x[i], y[i]))
         return x, y
-    elif method == 'implicit':
+
+    if method == 'implicit':
         for i in range(len(x) - 1):
             new_y = sec_method(
                 lambda t: t - y[i] - h * func(x[i + 1], t),
@@ -66,7 +81,8 @@ def euler(func, init_value, dom=(0., 1.), h=0.1, method='explicit'):
             )
             y = np.append(y, new_y)
         return x, y
-    elif method == 'modified':
+
+    if method == 'modified':
         for i in range(len(x) - 1):
             f = func(x[i], y[i])
             new_y = sec_method(
@@ -76,5 +92,3 @@ def euler(func, init_value, dom=(0., 1.), h=0.1, method='explicit'):
             )
             y = np.append(y, new_y)
         return x, y
-    else:
-        raise ValueError('Invalid method. Try explicit, implicit or modified')

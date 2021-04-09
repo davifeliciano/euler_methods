@@ -13,7 +13,7 @@ def func(x, y): return - lbd * y
     cm-super dvipng ghostscript packages for this '''
 plt.rcParams.update({
     'text.usetex': True,
-    'figure.figsize': [8.0, 4.8]
+    'figure.figsize': [10.8, 4.8]
 })
 
 fig, ax = plt.subplots(1, 2)
@@ -41,5 +41,5 @@ for i in range(2):
 
     ax[i].legend(loc='upper right')
 
-plt.savefig('problem1.png', dpi=300)
+plt.savefig('images/problem1/problem1.png', dpi=300)
 plt.show()

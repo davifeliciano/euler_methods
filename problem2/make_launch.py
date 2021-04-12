@@ -1,5 +1,4 @@
-import sys
-from euler_methods import check_dom
+import argparse
 import numpy as np
 from math import sin, cos, pi, sqrt, radians, degrees
 import matplotlib.pyplot as plt
@@ -14,6 +13,30 @@ def first_quad(deg):
             return deg % 90
         else:
             return - abs(deg) % 90
+
+
+def check_dom(dom):
+    '''
+    Check if dom is a valid domain
+    i. e. a 2 elem tuple with distinct number values
+    Return the values in crescent order
+    '''
+    if not isinstance(dom, tuple) or len(dom) != 2:
+        raise TypeError('dom must be a 2-element tuple')
+
+    try:
+        dom0 = float(dom[0])
+        dom1 = float(dom[1])
+    except TypeError:
+        raise TypeError('The elems of dom must be numbers')
+
+    if dom0 == dom1:
+        raise ValueError('The elems of dom must be distinct')
+
+    if dom0 < dom1:
+        return dom0, dom1
+    else:
+        return dom1, dom0
 
 
 def euler_system(funcs, init_values, dom=(0, 1), h=0.1):
@@ -51,50 +74,40 @@ different dom.
 but it was intended in order to make the method general
 '''
 
-usg_str = f'Usage:\n{sys.argv[0]} [velocity] [angle] [direction]\n'
-opt_arg_str = 'Optional arguments: [latitude] [mass] [alpha]'
-exit_str = usg_str + opt_arg_str
+# using argparse to parse command line arguments
 
-# check if the cl arguments are valid, if not, show user the way
-try:
-    velocity = abs(float(sys.argv[1]))
-    angle = radians(abs(first_quad(float(sys.argv[2]))))
-    direction = float(sys.argv[3])
-except ValueError:
-    raise SystemExit(exit_str + '\nAll the arguments must be numbers')
-except:
-    raise SystemExit(exit_str)
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    'velocity', type=float, help='the initial velocity of the shot, in m/s')
+parser.add_argument('angle', type=float,
+                    help='the azimuthal angle of the shot')
+parser.add_argument(
+    'direction', type=float, help='the direction of the shot, as in a compass')
+parser.add_argument('-l', '--latitude', type=float, nargs='?',
+                    default=40.0, const=40.0, help='the latitude from where the shot is taken')
+parser.add_argument('-m', '--mass', type=float, nargs='?',
+                    default=1.0, const=1.0, help='the mass of the projectile')
+parser.add_argument('-d', '--drag', type=float, nargs='?',
+                    default=0, const=1.0, help='the drag coefficient')
+parser.add_argument('-t', '--time', type=float, nargs='?',
+                    default=120.0, const=120.0, help='time domain of the solution')
+args = parser.parse_args()
 
-drag = True     # this flag indicates a drag coeficcient was supplied
+velocity = abs(args.velocity)
+angle = radians(abs(first_quad(args.angle)))
+direction = args.direction
+lat = radians(first_quad(args.latitude))
+mass = abs(args.mass)
+alpha = abs(args.drag)
+t_max = abs(args.time)
+
+# this strings will be the labels of some plots if drag coeff was supplied
 plot_label = 'Com resistência do ar'
 plot_label_nodrag = 'Sem resistência do ar'
-# this strings will be the labels of some plots if drag is True
-
-try:
-    alpha = abs(float(sys.argv[6]))
-except ValueError:
-    raise SystemExit(exit_str + '\nAll the arguments must be numbers')
-except IndexError:
-    drag = False
+drag = True     # this flag indicates that a drag coefficient was supplied
+if not alpha:
     plot_label = plot_label_nodrag
-    alpha = 0.0
-    pass
-
-try:
-    mass = abs(float(sys.argv[5]))
-except ValueError:
-    raise SystemExit(exit_str + '\nAll the arguments must be numbers')
-except IndexError:
-    mass = 1.0
-    pass
-
-try:
-    lat = radians(first_quad(float(sys.argv[4])))
-except ValueError:
-    raise SystemExit(exit_str + '\nAll the arguments must be numbers')
-except IndexError:
-    lat = radians(40)
-    pass
+    drag = False
 
 # print the parameters of the shot
 arg_info = (
@@ -107,9 +120,9 @@ arg_info = (
 )
 
 arg = [
-    sys.argv[1],
-    sys.argv[2],
-    sys.argv[3],
+    args.velocity,
+    args.angle,
+    args.direction,
     abs(degrees(lat)),
     mass,
     alpha
@@ -158,7 +171,7 @@ n_dot_init = velocity * cos(angle) * cos(direction)
 z_dot_init = velocity * sin(angle)
 
 h = 0.01
-dom = (0, 120)
+dom = (0, t_max)
 
 vel_funcs = (e_dot_func, n_dot_func, z_dot_func)
 vel_init_values = (e_dot_init, n_dot_init, z_dot_init)
@@ -245,9 +258,9 @@ fig_iter, ax_iter = plt.subplots(subplot_kw={"projection": "3d"})
 fig_iter.set_size_inches(6.4, 4.8)
 
 # using tight_layout to prevent overlap in subplots
-pos_fig.tight_layout(pad=3.0, w_pad=2.5)
+pos_fig.tight_layout(pad=4.0, w_pad=2.5)
 vel_fig.tight_layout(pad=3.0, w_pad=2.5)
-fig_3d.tight_layout(pad=3.0, w_pad=1.5)
+fig_3d.tight_layout(pad=4.0, w_pad=1.5)
 
 # setting initial view for the 3d plots of fig_3d
 ax1.view_init(azim=45, elev=15)
@@ -315,10 +328,18 @@ plt.close(fig_3d)
 
 print('Saving images...')
 
-pos_fig.savefig('images/problem2/position.png', dpi=300)
-vel_fig.savefig('images/problem2/velocity.png', dpi=300)
-fig_3d.savefig('images/problem2/trajectory.png', dpi=300)
+pos_fig.savefig('position.png', dpi=300)
+vel_fig.savefig('velocity.png', dpi=300)
+fig_3d.savefig('trajectory.png', dpi=300)
 
 print('Done!')
+print('\nShot distance:')
+
+shot_distance = sqrt(pos[0][-1] ** 2 + pos[1][-1] ** 2)
+print(plot_label + f': {shot_distance:.2f} m')
+if drag:
+    shot_distance_nodrag = sqrt(
+        pos_nodrag[0][-1] ** 2 + pos_nodrag[1][-1] ** 2)
+    print(plot_label_nodrag + f': {shot_distance_nodrag:.2f} m')
 
 plt.show()

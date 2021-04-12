@@ -1,17 +1,19 @@
 import sys
 from euler_methods import check_dom
 import numpy as np
-from math import sin, cos, pi, radians, sqrt
+from math import sin, cos, pi, sqrt, radians, degrees
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 
 def first_quad(deg):
-    if abs(deg) == 90:
-        return 90
-    if deg >= 0:
-        return deg % 90
+    if abs(deg) <= 90:
+        return deg
     else:
-        return - abs(deg) % 90
+        if deg > 0:
+            return deg % 90
+        else:
+            return - abs(deg) % 90
 
 
 def euler_system(funcs, init_values, dom=(0, 1), h=0.1):
@@ -37,51 +39,85 @@ def euler_system(funcs, init_values, dom=(0, 1), h=0.1):
     return x, ys
 
 
-usg_str = f'Usage:\n{sys.argv[0]} [latitude] [velocity] [angle] [direction]\n'
-opt_arg_str = f'Optional arguments: [mass] [alpha]'
+''' 
+definately not the way to go for the problem of a flying projectile
+since in this case we're often interest in the time interval where
+the solution for z is positive, i. e. the projectile is still flying
+
+with this algorithm, we do not ever check if z < 0, and, depending on
+the supplied arguments, you may want to rerun the algorithm with a
+different dom.
+
+but it was intended in order to make the method general
+'''
+
+usg_str = f'Usage:\n{sys.argv[0]} [velocity] [angle] [direction]\n'
+opt_arg_str = 'Optional arguments: [latitude] [mass] [alpha]'
 exit_str = usg_str + opt_arg_str
 
 # check if the cl arguments are valid, if not, show user the way
 try:
-    lat = radians(first_quad(float(sys.argv[1])))
-    velocity = abs(float(sys.argv[2]))
-    angle = radians(abs(first_quad(float(sys.argv[3]))))
-    direction = float(sys.argv[4])
+    velocity = abs(float(sys.argv[1]))
+    angle = radians(abs(first_quad(float(sys.argv[2]))))
+    direction = float(sys.argv[3])
 except ValueError:
     raise SystemExit(exit_str + '\nAll the arguments must be numbers')
 except:
     raise SystemExit(exit_str)
 
+drag = True     # this flag indicates a drag coeficcient was supplied
+plot_label = 'Com resistência do ar'
+plot_label_nodrag = 'Sem resistência do ar'
+# this strings will be the labels of some plots if drag is True
+
 try:
-    drag = True     # this flag indicates a drag coeficcient was supplied
     alpha = abs(float(sys.argv[6]))
 except ValueError:
     raise SystemExit(exit_str + '\nAll the arguments must be numbers')
 except IndexError:
     drag = False
+    plot_label = plot_label_nodrag
     alpha = 0.0
     pass
 
 try:
-    mass = abs(float(sys.argv[4]))
+    mass = abs(float(sys.argv[5]))
 except ValueError:
     raise SystemExit(exit_str + '\nAll the arguments must be numbers')
 except IndexError:
     mass = 1.0
     pass
 
+try:
+    lat = radians(first_quad(float(sys.argv[4])))
+except ValueError:
+    raise SystemExit(exit_str + '\nAll the arguments must be numbers')
+except IndexError:
+    lat = radians(40)
+    pass
+
+# print the parameters of the shot
 arg_info = (
-    'Latitude',
     'Speed',
     'Angle of Shot',
     'Direction',
+    'Latitude',
     'Mass',
     'Drag Coefficient'
 )
 
+arg = [
+    sys.argv[1],
+    sys.argv[2],
+    sys.argv[3],
+    abs(degrees(lat)),
+    mass,
+    alpha
+]
+
 arg_unit = [
-    '°',
     ' m/s',
+    '°',
     '°',
     '°',
     ' kg',
@@ -89,17 +125,17 @@ arg_unit = [
 ]
 
 if lat >= 0:
-    arg_unit[0] += ' N'
+    arg_unit[3] += ' N'
 else:
-    arg_unit[0] += ' S'
+    arg_unit[3] += ' S'
 
-for i in range(len(sys.argv) - 1):
-    print(arg_info[i] + f' = {float(sys.argv[i + 1])}' + arg_unit[i])
+for i in range(len(arg)):
+    print(arg_info[i] + f' = {arg[i]}' + arg_unit[i])
 
 print('\nComputing solution...')
 
-omega = 7.292e-5
-g = 9.807
+omega = 7.292e-5    # angular velocity of the Earth, in Hz
+g = 9.807           # Earth's gravitational acceleration near the surface
 
 
 def abs_vec(e, n, z): return sqrt(e ** 2 + n ** 2 + z ** 2)
@@ -174,12 +210,13 @@ for i in range(len(t)):
         vel = [v[:i] for v in vel]
         break
 
-for i in range(len(t_nodrag)):
-    if pos_nodrag[2][i] < 0:
-        t_nodrag = t_nodrag[:i]
-        pos_nodrag = [p[:i] for p in pos_nodrag]
-        vel_nodrag = [v[:i] for v in vel_nodrag]
-        break
+if drag:
+    for i in range(len(t_nodrag)):
+        if pos_nodrag[2][i] < 0:
+            t_nodrag = t_nodrag[:i]
+            pos_nodrag = [p[:i] for p in pos_nodrag]
+            vel_nodrag = [v[:i] for v in vel_nodrag]
+            break
 
 print('Ploting graphics...')
 
@@ -189,8 +226,8 @@ print('Ploting graphics...')
 plt.rcParams.update({
     'text.usetex': True,
     'figure.figsize': [12.8, 4.8],
-    'figure.autolayout': True,
-    'axes.labelsize': 15
+    'axes.labelsize': 15,
+    'axes.formatter.limits': (-1, 4)
 })
 
 # creating figures and axes
@@ -198,18 +235,27 @@ vel_fig, vel_axs = plt.subplots(1, 3)
 pos_fig, pos_axs = plt.subplots(1, 2)
 
 fig_3d = plt.figure()
+
 ax1 = fig_3d.add_subplot(1, 3, 1, projection='3d')
 ax2 = fig_3d.add_subplot(1, 3, 2, projection='3d')
 ax3 = fig_3d.add_subplot(1, 3, 3, projection='3d')
 ax_3d = [ax1, ax2, ax3]
 
-# setting up axes and plotting
-axes_labels = ('e', 'n', 'z')
+fig_iter, ax_iter = plt.subplots(subplot_kw={"projection": "3d"})
+fig_iter.set_size_inches(6.4, 4.8)
 
+# using tight_layout to prevent overlap in subplots
+pos_fig.tight_layout(pad=3.0, w_pad=2.5)
+vel_fig.tight_layout(pad=3.0, w_pad=2.5)
+fig_3d.tight_layout(pad=3.0, w_pad=1.5)
+
+# setting initial view for the 3d plots of fig_3d
 ax1.view_init(azim=45, elev=15)
 ax2.view_init(azim=-20, elev=20)
 ax3.view_init(azim=135, elev=20)
 
+# setting axes labels and grids and ploting
+axes_labels = ('e', 'n', 'z')
 for i in range(3):
     vel_axs[i].grid(ls='--')
     vel_axs[i].set(
@@ -221,13 +267,14 @@ for i in range(3):
         xlabel=r'$e$',
         ylabel=r'$n$'
     )
-    ax_3d[i].plot(*pos, label='Com resistência do ar', color='red')
-    vel_axs[i].plot(t, vel[i], label='Com resistência do ar', color='red')
+
+    ax_3d[i].plot(*pos, label=plot_label, color='red')
+    vel_axs[i].plot(t, vel[i], label=plot_label, color='red')
 
     if drag:
-        ax_3d[i].plot(*pos_nodrag, label='Sem resistência do ar', color='blue')
+        ax_3d[i].plot(*pos_nodrag, label=plot_label_nodrag, color='blue')
         vel_axs[i].plot(t_nodrag, vel_nodrag[i],
-                        label='Sem resistência do ar', color='blue')
+                        label=plot_label_nodrag, color='blue')
 
 pos_axs[0].grid(ls='--')
 pos_axs[0].set(
@@ -241,17 +288,37 @@ pos_axs[1].set(
     ylabel=r'$z$'
 )
 
-pos_axs[0].plot(pos[0], pos[1], label='Com resistência do ar', color='red')
-pos_axs[1].plot(t, pos[2], label='Com resistência do ar', color='red')
+ax_iter.set(
+    xlabel=r'$e$',
+    ylabel=r'$n$',
+    zlabel=r'$z$'
+)
+
+pos_axs[0].plot(pos[0], pos[1], label=plot_label, color='red')
+pos_axs[1].plot(t, pos[2], label=plot_label, color='red')
+ax_iter.plot(*pos, label=plot_label, color='red')
 
 if drag:
     pos_axs[0].plot(pos_nodrag[0], pos_nodrag[1],
-                    label='Sem resistência do ar', color='blue')
+                    label=plot_label_nodrag, color='blue')
     pos_axs[1].plot(t_nodrag, pos_nodrag[2],
-                    label='Sem resistência do ar', color='blue')
+                    label=plot_label_nodrag, color='blue')
+    ax_iter.plot(*pos_nodrag, label=plot_label_nodrag, color='blue')
+
+# setting up legends
+ax_iter.legend(loc='upper center', bbox_to_anchor=(0.5, 1.1))
+ax2.legend(loc='upper center', bbox_to_anchor=(0.5, 1.05))
+
+plt.close(pos_fig)
+plt.close(vel_fig)
+plt.close(fig_3d)
 
 print('Saving images...')
 
 pos_fig.savefig('images/problem2/position.png', dpi=300)
 vel_fig.savefig('images/problem2/velocity.png', dpi=300)
 fig_3d.savefig('images/problem2/trajectory.png', dpi=300)
+
+print('Done!')
+
+plt.show()

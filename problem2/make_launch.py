@@ -63,7 +63,7 @@ def euler_system(funcs, init_values, dom=(0, 1), h=0.1):
 
 
 ''' 
-definately not the way to go for the problem of a flying projectile
+not the better way to solve this problem of a flying projectile
 since in this case we're often interest in the time interval where
 the solution for z is positive, i. e. the projectile is still flying
 

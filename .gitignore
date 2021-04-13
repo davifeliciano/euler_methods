@@ -5,4 +5,5 @@ images
 parser_test.py
 problem1/*.png
 problem2/*.png
-task5.pdf
+*.pdf
+*.zip

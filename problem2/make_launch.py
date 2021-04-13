@@ -107,12 +107,16 @@ lat = radians(first_quad(args.latitude))
 mass = abs(args.mass)
 alpha = abs(args.drag)
 t_max = abs(args.time)
-frac, whole = modf((args.scale % 100) / 100)
-scale = abs(frac)
+
+if args.scale == 100:
+    scale = 1.0
+else:
+    frac, whole = modf((args.scale % 100) / 100)
+    scale = abs(frac)
 
 # this strings will be the labels of some plots if drag coeff was supplied
-plot_label = 'Com resistência do ar'
-plot_label_nodrag = 'Sem resistência do ar'
+plot_label = 'With Air Resistance'
+plot_label_nodrag = 'Without Air Resistance'
 drag = True     # this flag indicates that a drag coefficient was supplied
 if not alpha:
     plot_label = plot_label_nodrag
@@ -284,7 +288,7 @@ for i in range(3):
     vel_axs[i].grid(ls='--')
     vel_axs[i].set(
         xlabel=r'$t$',
-        ylabel=r'$v_{sub}$'.format(sub=axes_labels[i])
+        ylabel=r'$\dot {sub}$'.format(sub=axes_labels[i])
     )
 
     ax_3d[i].set(
@@ -377,13 +381,34 @@ vel_fig.savefig('velocity.png', dpi=300)
 fig_3d.savefig('trajectory.png', dpi=300)
 
 print('Done!')
-print('\nShot distance:')
 
-shot_distance = sqrt(pos[0][-1] ** 2 + pos[1][-1] ** 2)
-print(plot_label + f': {shot_distance:.2f} m')
+shot_range = sqrt(pos[0][-1] ** 2 + pos[1][-1] ** 2)
+max_height = pos[2].max()
+flight_time = t[-1]
+
 if drag:
-    shot_distance_nodrag = sqrt(
-        pos_nodrag[0][-1] ** 2 + pos_nodrag[1][-1] ** 2)
-    print(plot_label_nodrag + f': {shot_distance_nodrag:.2f} m')
+    shot_range_nodrag = sqrt(pos_nodrag[0][-1] ** 2 + pos_nodrag[1][-1] ** 2)
+    terminal_velocity = abs(vel[2][-1])
+    max_height_nodrag = pos_nodrag[2].max()
+    flight_time_nodrag = t_nodrag[-1]
+
+print('\nShot Distance:')
+print(plot_label + f': {shot_range:.2f} m')
+
+if drag:
+    print(plot_label_nodrag + f': {shot_range_nodrag:.2f} m')
+    print(f'\nTerminal Velocity: {terminal_velocity:.2f} m/s')
+
+print('\nMax Height:')
+print(plot_label + f': {max_height:.2f} m')
+
+if drag:
+    print(plot_label_nodrag + f': {max_height_nodrag:.2f} m')
+
+print('\nFlight Time:')
+print(plot_label + f': {flight_time:.2f} s')
+
+if drag:
+    print(plot_label_nodrag + f': {flight_time_nodrag:.2f} s')
 
 plt.show()

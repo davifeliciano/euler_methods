@@ -102,7 +102,7 @@ args = parser.parse_args()
 
 velocity = abs(args.velocity)
 angle = radians(abs(first_quad(args.angle)))
-direction = args.direction
+direction = radians(args.direction)
 lat = radians(first_quad(args.latitude))
 mass = abs(args.mass)
 alpha = abs(args.drag)
@@ -129,8 +129,8 @@ arg_info = (
 )
 
 arg = [
-    args.velocity,
-    args.angle,
+    velocity,
+    abs(first_quad(args.angle)),
     args.direction,
     abs(degrees(lat)),
     mass,
@@ -142,7 +142,7 @@ arg_unit = [
     '°',
     '°',
     '°',
-    ' kg',
+    ' Kg',
     ''
 ]
 
@@ -341,7 +341,28 @@ if drag:
         color='blue'
     )
 
-# setting up legends
+# setting up legends and texts
+text_str_1 = '\n'.join((
+    r'$v_0 = %.2f$' % (velocity, ) + ' m/s',
+    r'$\theta = %.2f$' % (abs(first_quad(args.angle)), ) + '°',
+    r'$\phi = %.2f$' % (args.direction, ) + '°'
+))
+
+text_str_2 = '\n'.join((
+    r'$\lambda = %.2f$' % (first_quad(args.latitude), ) + '°',
+    r'$m = %.2f$' % (mass, ) + ' Kg',
+    r'$\alpha = %.1e$' % (alpha, )
+))
+
+ax_iter.text2D(-0.2, 0.95, text_str_1,
+               transform=ax_iter.transAxes, fontsize=14)
+ax_iter.text2D(0.90, 0.95, text_str_2,
+               transform=ax_iter.transAxes, fontsize=14)
+
+ax1.text2D(0.05, 0.90, text_str_1, transform=ax1.transAxes, fontsize=12)
+ax1.text2D(0.75, 0.90, text_str_2, transform=ax1.transAxes, fontsize=12)
+
+
 ax_iter.legend(loc='upper center', bbox_to_anchor=(0.5, 1.1))
 ax2.legend(loc='upper center', bbox_to_anchor=(0.5, 1.05))
 

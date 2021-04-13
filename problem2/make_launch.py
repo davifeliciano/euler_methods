@@ -1,6 +1,6 @@
 import argparse
 import numpy as np
-from math import sin, cos, pi, sqrt, radians, degrees
+from math import sin, cos, pi, sqrt, radians, degrees, modf
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
@@ -76,7 +76,11 @@ but it was intended in order to make the method general
 
 # using argparse to parse command line arguments
 
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(
+    description='plot the trajectory of a projectile in the atmosphere, considering Coriolis effect and air resistance',
+    epilog='the images of the generated graphics for positions and velocities are saved in current dir'
+)
+
 parser.add_argument(
     'velocity', type=float, help='the initial velocity of the shot, in m/s')
 parser.add_argument('angle', type=float,
@@ -91,6 +95,9 @@ parser.add_argument('-d', '--drag', type=float, nargs='?',
                     default=0, const=1.0, help='the drag coefficient')
 parser.add_argument('-t', '--time', type=float, nargs='?',
                     default=120.0, const=120.0, help='time domain of the solution')
+parser.add_argument('-s', '--scale', type=float, nargs='?',
+                    default=100, const=100, help='0 - 100 scale between the plots with and without air resistance')
+
 args = parser.parse_args()
 
 velocity = abs(args.velocity)
@@ -100,6 +107,8 @@ lat = radians(first_quad(args.latitude))
 mass = abs(args.mass)
 alpha = abs(args.drag)
 t_max = abs(args.time)
+frac, whole = modf((args.scale % 100) / 100)
+scale = abs(frac)
 
 # this strings will be the labels of some plots if drag coeff was supplied
 plot_label = 'Com resistência do ar'
@@ -269,6 +278,8 @@ ax3.view_init(azim=135, elev=20)
 
 # setting axes labels and grids and ploting
 axes_labels = ('e', 'n', 'z')
+max_index = int(scale * (len(t_nodrag) - len(t) + len(t)))
+
 for i in range(3):
     vel_axs[i].grid(ls='--')
     vel_axs[i].set(
@@ -285,7 +296,13 @@ for i in range(3):
     vel_axs[i].plot(t, vel[i], label=plot_label, color='red')
 
     if drag:
-        ax_3d[i].plot(*pos_nodrag, label=plot_label_nodrag, color='blue')
+        ax_3d[i].plot(
+            pos_nodrag[0][:max_index],
+            pos_nodrag[1][:max_index],
+            pos_nodrag[2][:max_index],
+            label=plot_label_nodrag,
+            color='blue'
+        )
         vel_axs[i].plot(t_nodrag, vel_nodrag[i],
                         label=plot_label_nodrag, color='blue')
 
@@ -312,11 +329,17 @@ pos_axs[1].plot(t, pos[2], label=plot_label, color='red')
 ax_iter.plot(*pos, label=plot_label, color='red')
 
 if drag:
-    pos_axs[0].plot(pos_nodrag[0], pos_nodrag[1],
+    pos_axs[0].plot(pos_nodrag[0][:max_index], pos_nodrag[1][:max_index],
                     label=plot_label_nodrag, color='blue')
     pos_axs[1].plot(t_nodrag, pos_nodrag[2],
                     label=plot_label_nodrag, color='blue')
-    ax_iter.plot(*pos_nodrag, label=plot_label_nodrag, color='blue')
+    ax_iter.plot(
+        pos_nodrag[0][:max_index],
+        pos_nodrag[1][:max_index],
+        pos_nodrag[2][:max_index],
+        label=plot_label_nodrag,
+        color='blue'
+    )
 
 # setting up legends
 ax_iter.legend(loc='upper center', bbox_to_anchor=(0.5, 1.1))

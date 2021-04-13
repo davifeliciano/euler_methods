@@ -2,3 +2,6 @@ venv
 __pycache__
 .vscode
 images
+parser_test.py
+problem1/*.png
+problem2/*.png

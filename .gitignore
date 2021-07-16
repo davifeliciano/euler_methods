@@ -1,9 +1,7 @@
 venv
 __pycache__
+problem1/__pycache__
+problem2/__pycache__
 .vscode
-images
-parser_test.py
 problem1/*.png
 problem2/*.png
-*.pdf
-*.zip

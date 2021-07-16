@@ -41,5 +41,5 @@ for i in range(2):
 
     ax[i].legend(loc='upper right')
 
-plt.savefig('problem1.png', dpi=300)
+plt.savefig('../images/problem1.png', dpi=300)
 plt.show()
